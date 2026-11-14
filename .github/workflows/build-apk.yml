@@ -26,7 +26,7 @@ jobs:
 
       - name: Locate Project Root & Build APK
         run: |
-          # Cari lokasi file pubspec.yaml (maksimal kedalaman 3 folder)
+          # Cari lokasi file pubspec.yaml
           PUBSPEC_PATH=$(find . -maxdepth 3 -name "pubspec.yaml" | head -n 1)
           
           if [ -z "$PUBSPEC_PATH" ]; then
@@ -38,25 +38,58 @@ jobs:
           echo "Project ditemukan di direktori: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Generate scaffold Android secara non-destructive di direktori proyek
+          # Generate scaffold Android secara non-destructive
           flutter create --platforms=android --org com.aghani --project-name aghani_app /tmp/scaffold
           mkdir -p android
           cp -rn /tmp/scaffold/android/. android/
           
-          # Patch minSdk ke 23
+          # Patch minSdk ke 23 & compileSdk ke 36 pada app build.gradle
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/g' android/app/build.gradle.kts
             sed -i 's/minSdk = 21/minSdk = 23/g' android/app/build.gradle.kts
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' android/app/build.gradle.kts
+            sed -i 's/compileSdk = 34/compileSdk = 36/g' android/app/build.gradle.kts
           elif [ -f android/app/build.gradle ]; then
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
             sed -i 's/minSdkVersion 21/minSdkVersion 23/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion 34/compileSdkVersion 36/g' android/app/build.gradle
+          fi
+
+          # Paksa semua plugin (:file_picker, dll) memakai compileSdk 36
+          if [ -f android/build.gradle.kts ]; then
+            cat << 'EOF' >> android/build.gradle.kts
+
+          subprojects {
+              afterEvaluate {
+                  if (extensions.findByName("android") != null) {
+                      extensions.configure<com.android.build.gradle.BaseExtension>("android") {
+                          compileSdkVersion(36)
+                      }
+                  }
+              }
+          }
+          EOF
+          elif [ -f android/build.gradle ]; then
+            cat << 'EOF' >> android/build.gradle
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          compileSdkVersion 36
+                      }
+                  }
+              }
+          }
+          EOF
           fi
           
           # Download package dan build APK
           flutter pub get
           flutter build apk --release
           
-          # Pindahkan APK ke root workspace agar mudah di-upload oleh artifact
+          # Pindahkan APK ke root workspace agar siap di-upload artifact
           mkdir -p "$GITHUB_WORKSPACE/output_apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/output_apk/app-release.apk"
 
