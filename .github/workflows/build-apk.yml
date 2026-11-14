@@ -38,6 +38,9 @@ jobs:
           echo "Project ditemukan di direktori: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
+          # Bebaskan versi file_picker agar memakai versi yang kompatibel dengan SDK 36
+          sed -i 's/file_picker:.*/file_picker: any/g' pubspec.yaml
+          
           # Generate scaffold Android secara non-destructive
           flutter create --platforms=android --org com.aghani --project-name aghani_app /tmp/scaffold
           mkdir -p android
@@ -56,14 +59,14 @@ jobs:
             sed -i 's/compileSdkVersion 34/compileSdkVersion 36/g' android/app/build.gradle
           fi
 
-          # Paksa semua plugin library memakai compileSdk 36 TANPA afterEvaluate
+          # Paksa seluruh subproject memakai compileSdk 36 di tahap gradle.projectsEvaluated
           if [ -f android/build.gradle.kts ]; then
             cat << 'EOF' >> android/build.gradle.kts
 
-          subprojects {
-              plugins.withId("com.android.library") {
-                  extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
-                      compileSdk = 36
+          gradle.projectsEvaluated {
+              subprojects {
+                  extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
+                      compileSdkVersion(36)
                   }
               }
           }
@@ -71,10 +74,12 @@ jobs:
           elif [ -f android/build.gradle ]; then
             cat << 'EOF' >> android/build.gradle
 
-          subprojects {
-              plugins.withId('com.android.library') {
-                  android {
-                      compileSdkVersion 36
+          gradle.projectsEvaluated {
+              subprojects {
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          compileSdkVersion 36
+                      }
                   }
               }
           }
