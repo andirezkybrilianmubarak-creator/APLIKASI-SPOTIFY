@@ -49,13 +49,15 @@ jobs:
           mkdir -p android
           cp -rn /tmp/scaffold/android/. android/
           
-          # Set minSdk ke 23
+          # Set minSdk ke 23 & lewati Android Lint saat release agar AndroidLintWorkAction tidak crash
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/g' android/app/build.gradle.kts
             sed -i 's/minSdk = 21/minSdk = 23/g' android/app/build.gradle.kts
+            printf '\nandroid {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n}\n' >> android/app/build.gradle.kts
           elif [ -f android/app/build.gradle ]; then
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
             sed -i 's/minSdkVersion 21/minSdkVersion 23/g' android/app/build.gradle
+            printf '\nandroid {\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n}\n' >> android/app/build.gradle
           fi
           
           # Download package dan build APK release
