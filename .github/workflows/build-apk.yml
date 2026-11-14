@@ -38,17 +38,16 @@ jobs:
           echo "Project ditemukan di direktori: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Upgrade semua plugin (termasuk file_picker) agar memakai versi terbaru yang mendukung SDK 36
-          sed -i 's/file_picker:.*/file_picker: any/g' pubspec.yaml
-          sed -i 's/just_audio:.*/just_audio: any/g' pubspec.yaml
-          sed -i 's/image_picker:.*/image_picker: any/g' pubspec.yaml
+          # Upgrade file_picker agar mendukung SDK 36 & sesuaikan pemanggilan API-nya di Dart
+          sed -i 's/file_picker:.*/file_picker: ^13.0.0/g' pubspec.yaml
+          sed -i 's/FilePicker\.platform\.pickFiles/FilePicker.pickFiles/g' lib/screens/upload_screen.dart
           
           # Generate scaffold Android terbaru
           flutter create --platforms=android --org com.aghani --project-name aghani_app /tmp/scaffold
           mkdir -p android
           cp -rn /tmp/scaffold/android/. android/
           
-          # Set minSdk ke 23 (tanpa menyentuh compileSdk plugin lain)
+          # Set minSdk ke 23
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/g' android/app/build.gradle.kts
             sed -i 's/minSdk = 21/minSdk = 23/g' android/app/build.gradle.kts
@@ -57,7 +56,7 @@ jobs:
             sed -i 's/minSdkVersion 21/minSdkVersion 23/g' android/app/build.gradle
           fi
           
-          # Download package versi terbaru dan build APK
+          # Download package dan build APK
           flutter pub get
           flutter build apk --release
           
