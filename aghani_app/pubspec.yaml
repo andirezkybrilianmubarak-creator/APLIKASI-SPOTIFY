@@ -1,0 +1,20 @@
+name: aghani_app
+description: تطبيق بث ورفع الموسيقى بواجهة عربية
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  provider: ^6.1.2
+  just_audio: ^0.9.40
+  file_picker: ^8.1.2
+  image_picker: ^1.1.2
+
+flutter:
+  uses-material-design: true
