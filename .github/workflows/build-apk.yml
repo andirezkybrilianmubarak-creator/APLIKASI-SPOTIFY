@@ -38,55 +38,26 @@ jobs:
           echo "Project ditemukan di direktori: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Bebaskan versi file_picker agar memakai versi yang kompatibel dengan SDK 36
+          # Upgrade semua plugin (termasuk file_picker) agar memakai versi terbaru yang mendukung SDK 36
           sed -i 's/file_picker:.*/file_picker: any/g' pubspec.yaml
+          sed -i 's/just_audio:.*/just_audio: any/g' pubspec.yaml
+          sed -i 's/image_picker:.*/image_picker: any/g' pubspec.yaml
           
-          # Generate scaffold Android secara non-destructive
+          # Generate scaffold Android terbaru
           flutter create --platforms=android --org com.aghani --project-name aghani_app /tmp/scaffold
           mkdir -p android
           cp -rn /tmp/scaffold/android/. android/
           
-          # Patch minSdk ke 23 & compileSdk ke 36 pada app build.gradle
+          # Set minSdk ke 23 (tanpa menyentuh compileSdk plugin lain)
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/g' android/app/build.gradle.kts
             sed -i 's/minSdk = 21/minSdk = 23/g' android/app/build.gradle.kts
-            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' android/app/build.gradle.kts
-            sed -i 's/compileSdk = 34/compileSdk = 36/g' android/app/build.gradle.kts
           elif [ -f android/app/build.gradle ]; then
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
             sed -i 's/minSdkVersion 21/minSdkVersion 23/g' android/app/build.gradle
-            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/g' android/app/build.gradle
-            sed -i 's/compileSdkVersion 34/compileSdkVersion 36/g' android/app/build.gradle
-          fi
-
-          # Paksa seluruh subproject memakai compileSdk 36 di tahap gradle.projectsEvaluated
-          if [ -f android/build.gradle.kts ]; then
-            cat << 'EOF' >> android/build.gradle.kts
-
-          gradle.projectsEvaluated {
-              subprojects {
-                  extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
-                      compileSdkVersion(36)
-                  }
-              }
-          }
-          EOF
-          elif [ -f android/build.gradle ]; then
-            cat << 'EOF' >> android/build.gradle
-
-          gradle.projectsEvaluated {
-              subprojects {
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          compileSdkVersion 36
-                      }
-                  }
-              }
-          }
-          EOF
           fi
           
-          # Download package dan build APK
+          # Download package versi terbaru dan build APK
           flutter pub get
           flutter build apk --release
           
