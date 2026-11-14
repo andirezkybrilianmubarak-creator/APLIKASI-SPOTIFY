@@ -26,7 +26,7 @@ jobs:
 
       - name: Locate Project Root & Build APK
         run: |
-          # Cari lokasi file pubspec.yaml
+          # Cari lokasi file pubspec.yaml (ada di ./aghani_app)
           PUBSPEC_PATH=$(find . -maxdepth 3 -name "pubspec.yaml" | head -n 1)
           
           if [ -z "$PUBSPEC_PATH" ]; then
@@ -56,16 +56,14 @@ jobs:
             sed -i 's/compileSdkVersion 34/compileSdkVersion 36/g' android/app/build.gradle
           fi
 
-          # Paksa semua plugin (:file_picker, dll) memakai compileSdk 36
+          # Paksa semua plugin library memakai compileSdk 36 TANPA afterEvaluate
           if [ -f android/build.gradle.kts ]; then
             cat << 'EOF' >> android/build.gradle.kts
 
           subprojects {
-              afterEvaluate {
-                  if (extensions.findByName("android") != null) {
-                      extensions.configure<com.android.build.gradle.BaseExtension>("android") {
-                          compileSdkVersion(36)
-                      }
+              plugins.withId("com.android.library") {
+                  extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+                      compileSdk = 36
                   }
               }
           }
@@ -74,11 +72,9 @@ jobs:
             cat << 'EOF' >> android/build.gradle
 
           subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          compileSdkVersion 36
-                      }
+              plugins.withId('com.android.library') {
+                  android {
+                      compileSdkVersion 36
                   }
               }
           }
