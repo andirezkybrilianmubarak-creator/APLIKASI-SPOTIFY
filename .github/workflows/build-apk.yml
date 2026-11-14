@@ -26,7 +26,7 @@ jobs:
 
       - name: Locate Project Root & Build APK
         run: |
-          # Cari lokasi file pubspec.yaml (ada di ./aghani_app)
+          # Cari lokasi file pubspec.yaml (di dalam ./aghani_app)
           PUBSPEC_PATH=$(find . -maxdepth 3 -name "pubspec.yaml" | head -n 1)
           
           if [ -z "$PUBSPEC_PATH" ]; then
@@ -38,11 +38,13 @@ jobs:
           echo "Project ditemukan di direktori: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Upgrade file_picker agar mendukung SDK 36 & sesuaikan pemanggilan API-nya di Dart
+          # Upgrade file_picker ke v13 (support SDK 36) & sesuaikan tipe List<PlatformFile> di Dart
           sed -i 's/file_picker:.*/file_picker: ^13.0.0/g' pubspec.yaml
           sed -i 's/FilePicker\.platform\.pickFiles/FilePicker.pickFiles/g' lib/screens/upload_screen.dart
+          sed -i 's/natija\.files/natija/g' lib/screens/upload_screen.dart
+          sed -i 's/natija != null/natija.isNotEmpty/g' lib/screens/upload_screen.dart
           
-          # Generate scaffold Android terbaru
+          # Generate scaffold Android tanpa menimpa AndroidManifest.xml yang sudah ada
           flutter create --platforms=android --org com.aghani --project-name aghani_app /tmp/scaffold
           mkdir -p android
           cp -rn /tmp/scaffold/android/. android/
@@ -56,7 +58,7 @@ jobs:
             sed -i 's/minSdkVersion 21/minSdkVersion 23/g' android/app/build.gradle
           fi
           
-          # Download package dan build APK
+          # Download package dan build APK release
           flutter pub get
           flutter build apk --release
           
